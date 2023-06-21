@@ -1,8 +1,9 @@
-package server
+package api
 
 import (
-	"github.com/gin-gonic/gin"
 	"net/http"
+
+	"github.com/gin-gonic/gin"
 )
 
 type HandlerFunc func(c *gin.Context) (interface{}, error)
