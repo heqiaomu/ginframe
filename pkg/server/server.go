@@ -12,13 +12,12 @@ import (
 )
 
 type HTTPServer struct {
-	engine        *gin.Engine
-	routerManager *RouterManager
-	errorHandler  *ErrorHandler
-	serverConfig  *ServerConfig
+	engine       *gin.Engine
+	errorHandler *ErrorHandler
+	cfg          *Config
 }
 
-type ServerConfig struct {
+type Config struct {
 	Address          string        `json:"address" yaml:"address"`
 	ReadTimeout      time.Duration `json:"read_timeout" yaml:"read_timeout"`
 	WriteTimeout     time.Duration `json:"write_timeout" yaml:"write_timeout"`
@@ -26,11 +25,8 @@ type ServerConfig struct {
 	Mode             string        `json:"mode" yaml:"mode"`
 	LogOutput        bool          `json:"log_output" yaml:"log_output"`
 	PprofEnabled     bool          `json:"pprof_enabled" yaml:"pprof_enabled"`
+	Prefix           string        `json:"prefix" yaml:"prefix"`
 	PanicHandlerFunc gin.HandlerFunc
-}
-
-type RouterManager struct {
-	engine *gin.Engine
 }
 
 type ErrorHandler struct {
@@ -50,7 +46,7 @@ func (p *PanicExceptionRecord) Write(b []byte) (int, error) {
 	return len(errStr), err
 }
 
-func NewHTTPServer(config *ServerConfig) *HTTPServer {
+func NewHTTPServer(config *Config) *HTTPServer {
 	gin.SetMode(config.Mode)
 	if !config.LogOutput {
 		gin.DefaultWriter = ioutil.Discard
@@ -59,40 +55,22 @@ func NewHTTPServer(config *ServerConfig) *HTTPServer {
 	engine := gin.New()
 	engine.Use(gin.Logger(), config.PanicHandlerFunc)
 
-	routerManager := &RouterManager{
-		engine: engine,
-	}
-
 	return &HTTPServer{
-		engine:        engine,
-		routerManager: routerManager,
-		errorHandler:  NewErrorHandler(&PanicExceptionRecord{}),
-		serverConfig:  config,
+		engine:       engine,
+		errorHandler: NewErrorHandler(&PanicExceptionRecord{}),
+		cfg:          config,
 	}
 }
 
 func (s *HTTPServer) Start() {
-	svc := endless.NewServer(s.serverConfig.Address, s.engine)
-	svc.ReadHeaderTimeout = s.serverConfig.ReadTimeout
-	svc.WriteTimeout = s.serverConfig.WriteTimeout
-	svc.MaxHeaderBytes = s.serverConfig.MaxHeaderBytes
-
-	if s.serverConfig.PprofEnabled {
+	svc := endless.NewServer(s.cfg.Address, s.engine)
+	svc.ReadHeaderTimeout = s.cfg.ReadTimeout
+	svc.WriteTimeout = s.cfg.WriteTimeout
+	svc.MaxHeaderBytes = s.cfg.MaxHeaderBytes
+	if s.cfg.PprofEnabled {
 		pprof.Register(s.engine)
 	}
-
 	svc.ListenAndServe()
-}
-
-func (s *HTTPServer) AddRoute(httpMethod, route string, handler ...gin.HandlerFunc) {
-	s.routerManager.AddRoute(httpMethod, route, handler...)
-}
-func (s *HTTPServer) AddRoutes(routes []Route) {
-	s.routerManager.AddRoutes(routes)
-}
-
-func (s *HTTPServer) UseMiddleware(handlerFunc ...gin.HandlerFunc) {
-	s.engine.Use(handlerFunc...)
 }
 
 func NewErrorHandler(writer ErrorHandlerWriter) *ErrorHandler {
@@ -105,10 +83,8 @@ func NewErrorHandler(writer ErrorHandlerWriter) *ErrorHandler {
 				})
 			}
 		}()
-
 		c.Next()
 	}
-
 	return &ErrorHandler{
 		writer:    writer,
 		handlerFn: handlerFn,
@@ -119,18 +95,13 @@ func (e *ErrorHandler) GinHandlerFunc() gin.HandlerFunc {
 	return e.handlerFn
 }
 
-func (r *RouterManager) AddRoute(httpMethod, route string, handler ...gin.HandlerFunc) {
-	r.engine.Handle(httpMethod, route, handler...)
+func (s *HTTPServer) GetEngine() *gin.Engine {
+	return s.engine
 }
 
-func (r *RouterManager) AddRoutes(routes []Route) {
-	for _, route := range routes {
-		r.engine.Handle(route.Method, route.Path, route.Handlers...)
+func (s *HTTPServer) GetRouteGroup() *gin.RouterGroup {
+	if s.cfg.Prefix != "" {
+		return s.engine.Group(s.cfg.Prefix)
 	}
-}
-
-type Route struct {
-	Method   string
-	Path     string
-	Handlers []gin.HandlerFunc
+	return s.engine.Group("/")
 }

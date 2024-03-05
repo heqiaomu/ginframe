@@ -22,8 +22,7 @@ ifeq ($(origin OUTPUT_DIR),undefined)
 OUTPUT_DIR := $(ROOT_DIR)/$(OUTPUT_PREFIX)
 endif
 
-# blocface应用名前缀
-GO_APP_PRE := Heqiaomu-
+GO_APP_PRE := heqiaomu-
 
 # need git repo info
 GO_LDFLAGS += -X $(VERSION_PACKAGE).gitTag=$(GIT_TAG) -X $(VERSION_PACKAGE).version=$(VERSION) -X $(VERSION_PACKAGE).buildDate=$(shell date -u +'%Y-%m-%dT%H:%M:%SZ') -X $(VERSION_PACKAGE).gitCommit=$(GIT_COMMIT) -X $(VERSION_PACKAGE).gitTreeState=$(GIT_TREE_STATE) -X google.golang.org/protobuf/reflect/protoregistry.conflictPolicy=warn -s -w

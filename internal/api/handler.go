@@ -6,14 +6,14 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type HandlerFunc func(c *gin.Context) (interface{}, error)
+type HandlerFunc func(c *gin.Context) (interface{}, int, error)
 
 func HandleRequest(handler HandlerFunc) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		data, err := handler(c)
+		data, code, err := handler(c)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"code":    http.StatusInternalServerError,
+			c.JSON(http.StatusOK, gin.H{
+				"code":    code,
 				"message": err.Error(),
 				"data":    nil,
 			})
