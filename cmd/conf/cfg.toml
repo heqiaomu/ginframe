@@ -2,3 +2,14 @@
   port = 8081
   pprof = false
   prefix = "/"
+
+[rbac]
+  enabled=true
+  model_path="conf/rbac_model.cnf"
+  police_path=""
+  [rbac.redis]
+    db_type="redis"
+    host="127.0.0.1"
+    port="6539"
+    username=""
+    password=""

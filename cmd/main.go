@@ -5,11 +5,11 @@ package main
 
 import (
 	"fmt"
-	"github.com/Heqiaomu/ginframe/internal/api"
+	"github.com/Heqiaomu/ginframe/api/routes"
+	"github.com/Heqiaomu/ginframe/config"
 	"os"
 	"time"
 
-	"github.com/Heqiaomu/ginframe/internal/config"
 	"github.com/Heqiaomu/ginframe/pkg/server"
 	"github.com/gin-gonic/gin"
 	"github.com/spf13/cobra"
@@ -40,7 +40,7 @@ var rootCmd = &cobra.Command{
 		}
 
 		httpServer := server.NewHTTPServer(config)
-		api.Router(httpServer.GetRouteGroup())
+		routes.Router(httpServer.GetRouteGroup())
 		httpServer.Start()
 	},
 }
